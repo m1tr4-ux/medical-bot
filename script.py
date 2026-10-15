@@ -20,8 +20,8 @@ import multiprocessing
 
 TOKEN = "8508064690:AAGcT0-LdWR1nuqC27dU9gJoyFl_MJJrVfE"
 
-# Твой свежий ключ
-GEMINI_API_KEY = "AQ.Ab8RN6LzlK3PKU-EWI270cN878xp_4PFZUk5rDlWkpBEFjg7TQ"
+# Твой актуальный ключ из проекта bottt
+GEMINI_API_KEY = "AQ.Ab8RN6J82eF6wApefsFe2XCu5jgsCXAdw7mGZ7igHKN8hoiLew"
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 logging.basicConfig(level=logging.INFO)
@@ -522,7 +522,7 @@ async def handle_user_query_to_file(message: types.Message, state: FSMContext):
 {user_prompt}"""
 
         response = client.models.generate_content(
-            model='gemini-2.5-flash',
+            model='gemini-3.8-flash',
             contents=prompt_text
         )
         
