@@ -14,6 +14,10 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import FSInputFile, BotCommand
 
+# --- ИМПОРТЫ ДЛЯ ВЕБ-СЕРВЕРА (ПИНГЕРА) ---
+import threading
+from flask import Flask
+
 TOKEN = "8508064690:AAGcT0-LdWR1nuqC27dU9gJoyFl_MJJrVfE"
 
 GEMINI_API_KEY = "AQ.Ab8RN6KKmdkGTsYS8fzn4Y68YvLcA-iX3v-09K2zpv-Ieaj8Cw"
@@ -272,7 +276,7 @@ async def show_all_schedule(callback: types.CallbackQuery):
                 details = " | ".join(lines[1:]) if len(lines) > 1 else ""
                 text += f"   • `{item['time']}` | **{subj_name}**"
                 if details:
-                    text += f"\n     └ {details}"
+                    text += f"\n      └ {details}"
                 text += "\n"
     try:
         await callback.message.edit_text(text, reply_markup=get_main_menu())
@@ -460,7 +464,7 @@ async def handle_user_query_to_file(message: types.Message, state: FSMContext):
     await status_msg.edit_text("✍️ Шаг 3/3: ИИ пишет конспект по твоему запросу...")
 
     try:
-        model = genai.GenerativeModel("gemini-3.8-flash")
+        model = genai.GenerativeModel("gemini-1.5-flash")
 
         prompt = f"""Ты — умный академический ассистент для студентов-медиков. 
 Ниже предоставлен текст из учебного документа/методички. 
@@ -517,11 +521,28 @@ async def back_to_menu(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
 
 
+# --- МИНИ-ВЕБ-СЕРВЕР ДЛЯ ПИНГЕРА ---
+app = Flask(__name__)
+
+
+@app.route("/")
+def home():
+  return "Bot is alive and running!"
+
+
+def run_web_server():
+  port = int(os.environ.get("PORT", 10000))
+  app.run(host="0.0.0.0", port=port)
+
+
 async def main():
-    await set_bot_commands(bot)
-    print("Бот успешно запущен для группы ОМ117-А с актуальными кабинетами!")
-    await dp.start_polling(bot)
+  # Запускаем веб-сервер в фоновом потоке
+  threading.Thread(target=run_web_server).start()
+
+  await set_bot_commands(bot)
+  print("Бот успешно запущен для группы ОМ117-А с актуальными кабинетами!")
+  await dp.start_polling(bot)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+  asyncio.run(main())
