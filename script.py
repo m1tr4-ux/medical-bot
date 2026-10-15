@@ -521,9 +521,9 @@ async def handle_user_query_to_file(message: types.Message, state: FSMContext):
 Запрос студента:
 {user_prompt}"""
 
-        # Новый синтаксис вызова моделей через клиент google-genai
+        # Запрос к ИИ с актуальной моделью
         response = client.models.generate_content(
-            model='gemini-2.5-flash',
+            model='gemini-3.8-flash',
             contents=prompt_text,
         )
         
@@ -593,7 +593,7 @@ async def main():
     server_process.start()
 
     await set_bot_commands(bot)
-    print("Бот успешно запущен на новом SDK google-genai!")
+    print("Бот успешно запущен!")
     await dp.start_polling(bot)
 
 
