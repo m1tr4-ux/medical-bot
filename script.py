@@ -20,8 +20,8 @@ import multiprocessing
 
 TOKEN = "8508064690:AAGcT0-LdWR1nuqC27dU9gJoyFl_MJJrVfE"
 
-# Твой реальный рабочий API-ключ Gemini
-GEMINI_API_KEY = "AQ.Ab8RN6KKmdkGTsYS8fzn4Y68YvLcA-iX3v-09K2zpv-Ieaj8Cw"
+# Твой новый рабочий API-ключ Gemini
+GEMINI_API_KEY = "AQ.Ab8RN6LzlK3PKU-EWI270cN878xp_4PFZUk5rDlWkpBEFjg7TQ"
 genai.configure(api_key=GEMINI_API_KEY)
 
 logging.basicConfig(level=logging.INFO)
