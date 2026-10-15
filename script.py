@@ -5,7 +5,7 @@ import sqlite3
 from datetime import datetime
 import docx
 from pypdf import PdfReader
-import google.generativeai as genai
+from google import genai
 
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
@@ -23,8 +23,8 @@ TOKEN = "8508064690:AAGcT0-LdWR1nuqC27dU9gJoyFl_MJJrVfE"
 # Твой токен из AI Studio со скриншота
 GEMINI_API_KEY = "AQ.Ab8RN6JZ1H6zX3NwhSphKNm_YN_-q4dxLTDUN6JMeCiy9tDvJA"
 
-genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash')
+# Инициализация нового клиента google-genai
+client = genai.Client(api_key=GEMINI_API_KEY)
 
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=TOKEN)
@@ -521,7 +521,11 @@ async def handle_user_query_to_file(message: types.Message, state: FSMContext):
 Запрос студента:
 {user_prompt}"""
 
-        response = model.generate_content(prompt_text)
+        # Новый синтаксис вызова моделей через клиент google-genai
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt_text,
+        )
         
         if response and response.text:
             await status_msg.edit_text(response.text[:4000])
@@ -589,7 +593,7 @@ async def main():
     server_process.start()
 
     await set_bot_commands(bot)
-    print("Бот успешно запущен!")
+    print("Бот успешно запущен на новом SDK google-genai!")
     await dp.start_polling(bot)
 
 
