@@ -21,10 +21,14 @@ import multiprocessing
 TOKEN = "8508064690:AAGcT0-LdWR1nuqC27dU9gJoyFl_MJJrVfE"
 
 # Твой токен из AI Studio со скриншота
-GEMINI_API_KEY = "AQ.Ab8RN6JZ1H6zX3NwhSphKNm_YN_-q4dxLTDUN6JMeCiy9tDvJA"
+GEMINI_API_KEY = "AQ.Ab8RN6JkUZE7DcKdTM06b7lVBbXGvP0taLFD5uf6-ydNa4ugzQ"
 
-# Инициализация нового клиента google-genai
-client = genai.Client(api_key=GEMINI_API_KEY)
+# Инициализация для ключа AQ (Vertex AI / Google Cloud)
+client = genai.Client(
+    vertexai=True,
+    project="969349080992",  # Взято из вашего Project number на скриншоте
+    location="us-central1"   # Стандартный регион для работы моделей
+)
 
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=TOKEN)
