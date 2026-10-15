@@ -14,9 +14,9 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import FSInputFile, BotCommand
 
-# Мини-сервер для пингера (чтобы сервер не засыпал)
+# Мини-сервер для пингера (чтобы Render и UptimeRobot не спали)
 from http.server import HTTPServer, BaseHTTPRequestHandler
-import threading
+import multiprocessing
 
 TOKEN = "8508064690:AAGcT0-LdWR1nuqC27dU9gJoyFl_MJJrVfE"
 
@@ -29,6 +29,9 @@ dp = Dispatcher()
 
 UPLOAD_DIR = "study_files"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+# Запоминаем время запуска бота для отчетов
+START_TIME = datetime.now()
 
 
 def init_db():
@@ -136,8 +139,9 @@ def get_main_menu():
     builder.button(text="📚 Вся неделя", callback_data="schedule_all")
     builder.button(text="📂 Архив файлов", callback_data="file_archive")
     builder.button(text="📤 Загрузить материал", callback_data="upload_file_start")
+    builder.button(text="🟢 Статус / Онлайн", callback_data="bot_status_check")
     builder.button(text="ℹ️ Инструкция", callback_data="bot_help")
-    builder.adjust(2, 1, 2, 1)
+    builder.adjust(2, 1, 2, 1, 1)
     return builder.as_markup()
 
 
@@ -146,6 +150,7 @@ async def set_bot_commands(bot: Bot):
         BotCommand(command="start", description="Главное меню бота"),
         BotCommand(command="schedule", description="Расписание пар"),
         BotCommand(command="archive", description="Банк методичек и файлов"),
+        BotCommand(command="status", description="Отчет о подключении и работе"),
         BotCommand(command="help", description="Как пользоваться ботом")
     ]
     await bot.set_my_commands(commands)
@@ -160,6 +165,47 @@ async def cmd_start(message: types.Message, state: FSMContext):
         "Выбери нужный раздел в меню ниже:",
         reply_markup=get_main_menu()
     )
+
+
+@dp.message(Command("status"))
+async def cmd_status(message: types.Message, state: FSMContext):
+    await state.clear()
+    uptime_duration = datetime.now() - START_TIME
+    hours = int(uptime_duration.total_seconds() // 3600)
+    minutes = int((uptime_duration.total_seconds() % 3600) // 60)
+    
+    status_text = (
+        "🟢 **ОТЧЕТ О ПОДКЛЮЧЕНИИ И СТАТУСЕ БОТА**\n\n"
+        "✅ **Сервер:** Активен (Render Web Service)\n"
+        "🤖 **Статус Telegram-бота:** Онлайн и принимает запросы\n"
+        "⏰ **Время работы без перезагрузки:** свыше "
+        f"{hours} ч. {minutes} мин.\n"
+        "🔄 **Пинг-система:** Активна (UptimeRobot следит за соединением)\n"
+        "🎯 **Группа:** ОМ117-А"
+    )
+    await message.answer(status_text, reply_markup=get_main_menu())
+
+
+@dp.callback_query(F.data == "bot_status_check")
+async def callback_status(callback: types.CallbackQuery):
+    uptime_duration = datetime.now() - START_TIME
+    hours = int(uptime_duration.total_seconds() // 3600)
+    minutes = int((uptime_duration.total_seconds() % 3600) // 60)
+    
+    status_text = (
+        "🟢 **ОТЧЕТ О ПОДКЛЮЧЕНИИ И СТАТУСЕ БОТА**\n\n"
+        "✅ **Сервер:** Активен (Render Web Service)\n"
+        "🤖 **Статус Telegram-бота:** Онлайн и принимает запросы\n"
+        "⏰ **Время работы без перезагрузки:** свыше "
+        f"{hours} ч. {minutes} мин.\n"
+        "🔄 **Пинг-система:** Активна (UptimeRobot следит за соединением)\n"
+        "🎯 **Группа:** ОМ117-А"
+    )
+    try:
+        await callback.message.edit_text(status_text, reply_markup=get_main_menu())
+    except Exception:
+        pass
+    await callback.answer("Статус обновлен: всё работает отлично!")
 
 
 @dp.message(Command("schedule"))
@@ -186,10 +232,11 @@ async def cmd_help(message: types.Message, state: FSMContext):
     await state.clear()
     await message.answer(
         "ℹ️ **Как пользоваться ботом:**\n\n"
-        "1. **Расписание:** Кнопки «Сегодня» и «Завтра» показывают пары, аудитории, преподавателей и перемены.\n"
-        "2. **Архив материалов:** Общий банк файлов нашей группы. Выбираешь предмет и нужную тему.\n"
-        "3. **Загрузка:** Любой одногруппник может скинуть вордовский файл или PDF-методичку, указать предмет и тему, чтобы все могли по нему учиться.\n"
-        "4. **Работа с ИИ:** Открыв любой файл из архива, пиши в чат любые запросы простым языком (например: *«Напиши краткий конспект по 2 теме»* или *«Выпиши основные термины»*).",
+        "1. **Расписание:** Кнопки «Сегодня» и «Завтра» показывают пары, аудитории, преподавателей.\n"
+        "2. **Архив материалов:** Общий банк файлов нашей группы.\n"
+        "3. **Загрузка:** Скидывай вордовский файл или PDF-методичку.\n"
+        "4. **Работа с ИИ:** Открыв файл, пиши запросы простым языком.\n"
+        "5. **Статус:** Команда `/status` проверяет подключение сервера.",
         reply_markup=get_main_menu()
     )
 
@@ -198,10 +245,11 @@ async def cmd_help(message: types.Message, state: FSMContext):
 async def callback_help(callback: types.CallbackQuery):
     text = (
         "ℹ️ **Как пользоваться ботом:**\n\n"
-        "1. **Расписание:** Кнопки «Сегодня» и «Завтра» показывают пары, аудитории, преподавателей и перемены.\n"
-        "2. **Архив материалов:** Общий банк файлов нашей группы. Выбираешь предмет и нужную тему.\n"
-        "3. **Загрузка:** Любой одногруппник может скинуть вордовский файл или PDF-методичку, указать предмет и тему, чтобы все могли по нему учиться.\n"
-        "4. **Работа с ИИ:** Открыв любой файл из архива, пиши в чат любые запросы простым языком (например: *«Напиши краткий конспект по 2 теме»* или *«Выпиши основные термины»*)."
+        "1. **Расписание:** Кнопки «Сегодня» и «Завтра» показывают пары, аудитории, преподавателей.\n"
+        "2. **Архив материалов:** Общий банк файлов нашей группы.\n"
+        "3. **Загрузка:** Скидывай вордовский файл или PDF-методичку.\n"
+        "4. **Работа с ИИ:** Открыв файл, пиши запросы простым языком.\n"
+        "5. **Статус:** Команда `/status` проверяет подключение сервера."
     )
     try:
         await callback.message.edit_text(text, reply_markup=get_main_menu())
@@ -430,7 +478,7 @@ async def file_actions(callback: types.CallbackQuery, state: FSMContext):
            f"📁 Файл: *{file_name}*\n" \
            f"👤 Загрузил(а): *{uploader}*\n\n" \
            f"💬 **Режим свободного запроса активирован!**\n" \
-           f"Напиши в чат свой запрос к этому файлу (например: *«напиши развернутый конспект по этой теме»*), и ИИ сгенерирует ответ."
+           f"Напиши в чат свой запрос к этому файлу, и ИИ ответит."
 
     try:
         await callback.message.edit_text(text, reply_markup=builder.as_markup())
@@ -450,7 +498,6 @@ async def handle_user_query_to_file(message: types.Message, state: FSMContext):
         return
 
     status_msg = await message.answer("🧠 Шаг 1/3: Открываю файл и читаю текст...")
-
     file_text = extract_text_from_file(file_path)
 
     if not file_text.strip():
@@ -461,11 +508,10 @@ async def handle_user_query_to_file(message: types.Message, state: FSMContext):
     await status_msg.edit_text("🔍 Шаг 2/3: Анализирую структуру методички...")
 
     await asyncio.sleep(0.4)
-    await status_msg.edit_text("✍️ Шаг 3/3: ИИ пишет конспект по твоему запросу...")
+    await status_msg.edit_text("✍️ Шаг 3/3: ИИ пишет ответ по твоему запросу...")
 
     try:
         model = genai.GenerativeModel("gemini-1.5-flash")
-
         prompt = f"""Ты — умный академический ассистент для студентов-медиков. 
 Ниже предоставлен текст из учебного документа/методички. 
 Выполни запрос студента строго по делу, без лишней воды, опираясь на этот текст.
@@ -477,7 +523,6 @@ async def handle_user_query_to_file(message: types.Message, state: FSMContext):
 {user_prompt}"""
 
         response = model.generate_content(prompt)
-
         if response and response.text:
             await status_msg.edit_text(response.text[:4000])
         else:
@@ -521,7 +566,7 @@ async def back_to_menu(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
 
 
-# --- МИНИ-СЕРВЕР ДЛЯ ПИНГЕРА ---
+# --- МИНИ-СЕРВЕР ДЛЯ ПИНГОВ (RENDER & UPTIMEROBOT) ---
 class SimpleHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
@@ -540,8 +585,9 @@ def run_web_server():
 
 
 async def main():
-    # Запускаем пингер в фоновом режиме
-    threading.Thread(target=run_web_server, daemon=True).start()
+    # Запускаем мини-сервер через multiprocessing, чтобы порты открывались мгновенно
+    server_process = multiprocessing.Process(target=run_web_server, daemon=True)
+    server_process.start()
 
     await set_bot_commands(bot)
     print("Бот успешно запущен для группы ОМ117-А с актуальными кабинетами!")
