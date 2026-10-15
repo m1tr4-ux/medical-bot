@@ -5,7 +5,7 @@ import sqlite3
 from datetime import datetime
 import docx
 from pypdf import PdfReader
-import requests
+import google.generativeai as genai
 
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
@@ -20,8 +20,9 @@ import multiprocessing
 
 TOKEN = "8508064690:AAGcT0-LdWR1nuqC27dU9gJoyFl_MJJrVfE"
 
-# Твой свежий рабочий API-ключ
-GEMINI_API_KEY = "AQ.Ab8RN6IcZXfxgBnat9A-AkRrZNAZm5-aSR8XVAuH211Grv9pMA"
+# Твой свежий ключ Google AI Studio
+GEMINI_API_KEY = "AQ.Ab8RN6JQ1Y0kF_uFehwS7adQAFfqkvPSUaFYT6gc0jjZL_IfMQ"
+genai.configure(api_key=GEMINI_API_KEY)
 
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=TOKEN)
@@ -66,7 +67,7 @@ EXACT_SCHEDULE = {
     ],
     "Среда": [
         {"time": "12.00 - 13.50", "subject": "Медицинская генетика\n👩‍🏫 Преподаватель: Сауле Алихановна (519 ауд.)"},
-        {"time": "16.00 - 18.50", "subject": "Художественная анатомия\n👩‍🏫 Преподаватель: Саитов В. (102 ауд.)"}
+        {"time": "16.00 - 18.50", "subject": "Художественная анатомия\n👨‍🏫 Преподаватель: Саитов В. (102 ауд.)"}
     ],
     "Четверг": [
         {"time": "08.00 - 09.50", "subject": "Казахский язык\n👩‍🏫 Преподаватель: Абнасырова Р. (320 ауд.)"},
@@ -510,9 +511,10 @@ async def handle_user_query_to_file(message: types.Message, state: FSMContext):
     await status_msg.edit_text("✍️ Шаг 3/3: ИИ пишет ответ по твоему запросу...")
 
     try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+        genai.configure(api_key=GEMINI_API_KEY)
+        model = genai.GenerativeModel("gemini-1.5-flash")
         
-        prompt_text = f"""Ты — умный академический ассистент для студентов-медиков. 
+        prompt = f"""Ты — умный академический ассистент для студентов-медиков. 
 Ниже предоставлен текст из учебного документа/методички. 
 Выполни запрос студента строго по делу, без лишней воды, опираясь на этот текст.
 
@@ -522,23 +524,11 @@ async def handle_user_query_to_file(message: types.Message, state: FSMContext):
 Запрос студента:
 {user_prompt}"""
 
-        payload = {
-            "contents": [{
-                "parts": [{"text": prompt_text}]
-            }]
-        }
-        
-        headers = {'Content-Type': 'application/json'}
-        
-        response = requests.post(url, json=payload, headers=headers, timeout=30)
-        res_json = response.json()
-        
-        if response.status_code == 200:
-            ai_answer = res_json['candidates'][0]['content']['parts'][0]['text']
-            await status_msg.edit_text(ai_answer[:4000])
+        response = model.generate_content(prompt)
+        if response and response.text:
+            await status_msg.edit_text(response.text[:4000])
         else:
-            err_msg = res_json.get('error', {}).get('message', 'Неизвестная ошибка API')
-            await status_msg.edit_text(f"⚠️ Ошибка Gemini API: {err_msg}")
+            await status_msg.edit_text("⚠️ ИИ вернул пустой ответ.")
 
     except Exception as e:
         await status_msg.edit_text(f"⚠️ Ошибка при обращении к ИИ: {e}")
