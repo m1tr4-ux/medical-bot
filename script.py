@@ -14,12 +14,13 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import FSInputFile, BotCommand
 
-# Мини-сервер для пингера (чтобы Render и UptimeRobot не спали)
+# Мини-сервер для пингеров ( Render & UptimeRobot )
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import multiprocessing
 
 TOKEN = "8508064690:AAGcT0-LdWR1nuqC27dU9gJoyFl_MJJrVfE"
 
+# Твой реальный рабочий API-ключ Gemini
 GEMINI_API_KEY = "AQ.Ab8RN6KKmdkGTsYS8fzn4Y68YvLcA-iX3v-09K2zpv-Ieaj8Cw"
 genai.configure(api_key=GEMINI_API_KEY)
 
