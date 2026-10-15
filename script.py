@@ -20,12 +20,16 @@ import multiprocessing
 
 TOKEN = "8508064690:AAGcT0-LdWR1nuqC27dU9gJoyFl_MJJrVfE"
 
-# Твой токен из AI Studio со скриншота
-GEMINI_API_KEY = "AQ.Ab8RN6Kj0u3XEqKqrmcmOXbnx4-hf2hvqGLcwxwQUkp47CImVg"
+# Твой новый ключ и номер проекта со скриншота
+GEMINI_API_KEY = "AQ.Ab8RN6JD9ny0xT-cRrCJSrrdBkliKbXDtrFjgJi8-D4EZKIYNA"
 
-# Инициализация клиента
-client = genai.Client(api_key=GEMINI_API_KEY)
+# Включаем работу через Vertex AI и передаем данные проекта
+os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "true"
+os.environ["GOOGLE_CLOUD_PROJECT"] = "847061344628"
+os.environ["GOOGLE_OAUTH_ACCESS_TOKEN"] = GEMINI_API_KEY
 
+# Инициализация клиента (он сам подхватит переменные выше)
+client = genai.Client()
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
@@ -521,19 +525,16 @@ async def handle_user_query_to_file(message: types.Message, state: FSMContext):
 Запрос студента:
 {user_prompt}"""
 
-      # Запрос через правильный метод для твоего типа ключа
-        interaction = client.interactions.create(
-            model='models/gemini-3.8-flash',
-            input=prompt_text,
+      # Вызов модели через стандартный клиент Vertex AI
+        response = client.models.generate_content(
+            model='gemini-3.8-flash',
+            contents=prompt_text,
         )
         
-        if interaction and hasattr(interaction, 'steps') and interaction.steps:
-            answer_text = interaction.steps[-1]
-            await status_msg.edit_text(str(answer_text)[:4000])
-        elif interaction and hasattr(interaction, 'text'):
-            await status_msg.edit_text(str(interaction.text)[:4000])
+        if response and response.text:
+            await status_msg.edit_text(response.text[:4000])
         else:
-            await status_msg.edit_text(str(interaction)[:4000])
+            await status_msg.edit_text("⚠️ ИИ вернул пустой ответ.")
 
     except Exception as e:
         await status_msg.edit_text(f"⚠️ Ошибка при обращении к ИИ: {e}")
