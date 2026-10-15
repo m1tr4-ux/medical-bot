@@ -5,7 +5,7 @@ import sqlite3
 from datetime import datetime
 import docx
 from pypdf import PdfReader
-import google.generativeai as genai
+from google import genai
 
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
@@ -20,9 +20,9 @@ import multiprocessing
 
 TOKEN = "8508064690:AAGcT0-LdWR1nuqC27dU9gJoyFl_MJJrVfE"
 
-# Твой свежий ключ Google AI Studio
-GEMINI_API_KEY = "AQ.Ab8RN6JQ1Y0kF_uFehwS7adQAFfqkvPSUaFYT6gc0jjZL_IfMQ"
-genai.configure(api_key=GEMINI_API_KEY)
+# Твой свежий ключ
+GEMINI_API_KEY = "AQ.Ab8RN6LzlK3PKU-EWI270cN878xp_4PFZUk5rDlWkpBEFjg7TQ"
+client = genai.Client(api_key=GEMINI_API_KEY)
 
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=TOKEN)
@@ -511,10 +511,7 @@ async def handle_user_query_to_file(message: types.Message, state: FSMContext):
     await status_msg.edit_text("✍️ Шаг 3/3: ИИ пишет ответ по твоему запросу...")
 
     try:
-        genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        
-        prompt = f"""Ты — умный академический ассистент для студентов-медиков. 
+        prompt_text = f"""Ты — умный академический ассистент для студентов-медиков. 
 Ниже предоставлен текст из учебного документа/методички. 
 Выполни запрос студента строго по делу, без лишней воды, опираясь на этот текст.
 
@@ -524,7 +521,11 @@ async def handle_user_query_to_file(message: types.Message, state: FSMContext):
 Запрос студента:
 {user_prompt}"""
 
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt_text
+        )
+        
         if response and response.text:
             await status_msg.edit_text(response.text[:4000])
         else:
