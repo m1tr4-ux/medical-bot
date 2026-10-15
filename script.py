@@ -5,7 +5,7 @@ import sqlite3
 from datetime import datetime
 import docx
 from pypdf import PdfReader
-import requests  # Вместо кривого google-generativeai
+import requests
 
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
@@ -20,8 +20,8 @@ import multiprocessing
 
 TOKEN = "8508064690:AAGcT0-LdWR1nuqC27dU9gJoyFl_MJJrVfE"
 
-# Твой API-ключ
-GEMINI_API_KEY = "AQ.Ab8RN6LzlK3PKU-EWI270cN878xp_4PFZUk5rDlWkpBEFjg7TQ"
+# Твой свежий рабочий API-ключ
+GEMINI_API_KEY = "AQ.Ab8RN6IcZXfxgBnat9A-AkRrZNAZm5-aSR8XVAuH211Grv9pMA"
 
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=TOKEN)
@@ -66,7 +66,7 @@ EXACT_SCHEDULE = {
     ],
     "Среда": [
         {"time": "12.00 - 13.50", "subject": "Медицинская генетика\n👩‍🏫 Преподаватель: Сауле Алихановна (519 ауд.)"},
-        {"time": "16.00 - 18.50", "subject": "Художественная анатомия\n👨‍🏫 Преподаватель: Саитов В. (102 ауд.)"}
+        {"time": "16.00 - 18.50", "subject": "Художественная анатомия\n👩‍🏫 Преподаватель: Саитов В. (102 ауд.)"}
     ],
     "Четверг": [
         {"time": "08.00 - 09.50", "subject": "Казахский язык\n👩‍🏫 Преподаватель: Абнасырова Р. (320 ауд.)"},
@@ -510,7 +510,6 @@ async def handle_user_query_to_file(message: types.Message, state: FSMContext):
     await status_msg.edit_text("✍️ Шаг 3/3: ИИ пишет ответ по твоему запросу...")
 
     try:
-        # Прямой запрос через HTTP к API Gemini (никаких сбоев библиотеки)
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
         
         prompt_text = f"""Ты — умный академический ассистент для студентов-медиков. 
