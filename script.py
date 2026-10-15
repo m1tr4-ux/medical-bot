@@ -521,16 +521,19 @@ async def handle_user_query_to_file(message: types.Message, state: FSMContext):
 Запрос студента:
 {user_prompt}"""
 
-        # Запрос к ИИ с актуальной моделью
-        response = client.models.generate_content(
-            model='gemini-3.8-flash',
-            contents=prompt_text,
+      # Запрос через правильный метод для твоего типа ключа
+        interaction = client.interactions.create(
+            model='models/gemini-3.8-flash',
+            input=prompt_text,
         )
         
-        if response and response.text:
-            await status_msg.edit_text(response.text[:4000])
+        if interaction and hasattr(interaction, 'steps') and interaction.steps:
+            answer_text = interaction.steps[-1]
+            await status_msg.edit_text(str(answer_text)[:4000])
+        elif interaction and hasattr(interaction, 'text'):
+            await status_msg.edit_text(str(interaction.text)[:4000])
         else:
-            await status_msg.edit_text("⚠️ ИИ вернул пустой ответ.")
+            await status_msg.edit_text(str(interaction)[:4000])
 
     except Exception as e:
         await status_msg.edit_text(f"⚠️ Ошибка при обращении к ИИ: {e}")
