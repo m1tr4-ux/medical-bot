@@ -14,9 +14,9 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import FSInputFile, BotCommand
 
-# --- ИМПОРТЫ ДЛЯ ВЕБ-СЕРВЕРА (ПИНГЕРА) ---
+# Мини-сервер для пингера (чтобы сервер не засыпал)
+from http.server import HTTPServer, BaseHTTPRequestHandler
 import threading
-from flask import Flask
 
 TOKEN = "8508064690:AAGcT0-LdWR1nuqC27dU9gJoyFl_MJJrVfE"
 
@@ -521,28 +521,32 @@ async def back_to_menu(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
 
 
-# --- МИНИ-ВЕБ-СЕРВЕР ДЛЯ ПИНГЕРА ---
-app = Flask(__name__)
+# --- МИНИ-СЕРВЕР ДЛЯ ПИНГЕРА ---
+class SimpleHandler(BaseHTTPRequestHandler):
 
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"Bot is alive and running!")
 
-@app.route("/")
-def home():
-  return "Bot is alive and running!"
+    def log_message(self, format, *args):
+        pass
 
 
 def run_web_server():
-  port = int(os.environ.get("PORT", 10000))
-  app.run(host="0.0.0.0", port=port)
+    port = int(os.environ.get("PORT", 10000))
+    server = HTTPServer(("0.0.0.0", port), SimpleHandler)
+    server.serve_forever()
 
 
 async def main():
-  # Запускаем веб-сервер в фоновом потоке
-  threading.Thread(target=run_web_server).start()
+    # Запускаем пингер в фоновом режиме
+    threading.Thread(target=run_web_server, daemon=True).start()
 
-  await set_bot_commands(bot)
-  print("Бот успешно запущен для группы ОМ117-А с актуальными кабинетами!")
-  await dp.start_polling(bot)
+    await set_bot_commands(bot)
+    print("Бот успешно запущен для группы ОМ117-А с актуальными кабинетами!")
+    await dp.start_polling(bot)
 
 
 if __name__ == "__main__":
-  asyncio.run(main())
+    asyncio.run(main())
