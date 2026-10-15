@@ -5,7 +5,7 @@ import sqlite3
 from datetime import datetime
 import docx
 from pypdf import PdfReader
-import google.generativeai as genai
+import requests  # Вместо кривого google-generativeai
 
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
@@ -20,10 +20,8 @@ import multiprocessing
 
 TOKEN = "8508064690:AAGcT0-LdWR1nuqC27dU9gJoyFl_MJJrVfE"
 
-# Принудительно устанавливаем ключ в переменные окружения и конфигурируем
+# Твой API-ключ
 GEMINI_API_KEY = "AQ.Ab8RN6LzlK3PKU-EWI270cN878xp_4PFZUk5rDlWkpBEFjg7TQ"
-os.environ["GEMINI_API_KEY"] = GEMINI_API_KEY
-genai.configure(api_key=GEMINI_API_KEY)
 
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=TOKEN)
@@ -32,7 +30,6 @@ dp = Dispatcher()
 UPLOAD_DIR = "study_files"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# Запоминаем время запуска бота для отчетов
 START_TIME = datetime.now()
 
 
@@ -513,11 +510,10 @@ async def handle_user_query_to_file(message: types.Message, state: FSMContext):
     await status_msg.edit_text("✍️ Шаг 3/3: ИИ пишет ответ по твоему запросу...")
 
     try:
-        # Передаем ключ явно через ClientOptions или параметром API-ключа в конструкторе модели
-        genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        # Прямой запрос через HTTP к API Gemini (никаких сбоев библиотеки)
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
         
-        prompt = f"""Ты — умный академический ассистент для студентов-медиков. 
+        prompt_text = f"""Ты — умный академический ассистент для студентов-медиков. 
 Ниже предоставлен текст из учебного документа/методички. 
 Выполни запрос студента строго по делу, без лишней воды, опираясь на этот текст.
 
@@ -527,11 +523,23 @@ async def handle_user_query_to_file(message: types.Message, state: FSMContext):
 Запрос студента:
 {user_prompt}"""
 
-        response = model.generate_content(prompt)
-        if response and response.text:
-            await status_msg.edit_text(response.text[:4000])
+        payload = {
+            "contents": [{
+                "parts": [{"text": prompt_text}]
+            }]
+        }
+        
+        headers = {'Content-Type': 'application/json'}
+        
+        response = requests.post(url, json=payload, headers=headers, timeout=30)
+        res_json = response.json()
+        
+        if response.status_code == 200:
+            ai_answer = res_json['candidates'][0]['content']['parts'][0]['text']
+            await status_msg.edit_text(ai_answer[:4000])
         else:
-            await status_msg.edit_text("⚠️ ИИ вернул пустой ответ.")
+            err_msg = res_json.get('error', {}).get('message', 'Неизвестная ошибка API')
+            await status_msg.edit_text(f"⚠️ Ошибка Gemini API: {err_msg}")
 
     except Exception as e:
         await status_msg.edit_text(f"⚠️ Ошибка при обращении к ИИ: {e}")
@@ -590,7 +598,6 @@ def run_web_server():
 
 
 async def main():
-    # Запускаем мини-сервер через multiprocessing, чтобы порты открывались мгновенно
     server_process = multiprocessing.Process(target=run_web_server, daemon=True)
     server_process.start()
 
