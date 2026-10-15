@@ -5,7 +5,7 @@ import sqlite3
 from datetime import datetime
 import docx
 from pypdf import PdfReader
-from google import genai
+import aiohttp
 
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
@@ -20,9 +20,8 @@ import multiprocessing
 
 TOKEN = "8508064690:AAGcT0-LdWR1nuqC27dU9gJoyFl_MJJrVfE"
 
-# Твой актуальный ключ из проекта bottt
-GEMINI_API_KEY = "AQ.Ab8RN6J82eF6wApefsFe2XCu5jgsCXAdw7mGZ7igHKN8hoiLew"
-client = genai.Client(api_key=GEMINI_API_KEY)
+# Твой токен из AI Studio
+GEMINI_API_KEY = "AQ.Ab8RN6KZN3GyZ_kgNWyMwuOVE1g-CNAcu84iC_sOs1cthWJ8RQ"
 
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=TOKEN)
@@ -511,6 +510,12 @@ async def handle_user_query_to_file(message: types.Message, state: FSMContext):
     await status_msg.edit_text("✍️ Шаг 3/3: ИИ пишет ответ по твоему запросу...")
 
     try:
+        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+        headers = {
+            "Authorization": f"Bearer {GEMINI_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        
         prompt_text = f"""Ты — умный академический ассистент для студентов-медиков. 
 Ниже предоставлен текст из учебного документа/методички. 
 Выполни запрос студента строго по делу, без лишней воды, опираясь на этот текст.
@@ -521,18 +526,28 @@ async def handle_user_query_to_file(message: types.Message, state: FSMContext):
 Запрос студента:
 {user_prompt}"""
 
-        response = client.models.generate_content(
-            model='gemini-3.8-flash',
-            contents=prompt_text
-        )
-        
-        if response and response.text:
-            await status_msg.edit_text(response.text[:4000])
-        else:
-            await status_msg.edit_text("⚠️ ИИ вернул пустой ответ.")
+        payload = {
+            "contents": [{
+                "parts": [{"text": prompt_text}]
+            }]
+        }
+
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, json=payload, headers=headers) as resp:
+                if resp.status == 200:
+                    res_json = await resp.json()
+                    candidates = res_json.get("candidates", [])
+                    if candidates:
+                        answer_text = candidates[0]["content"]["parts"][0]["text"]
+                        await status_msg.edit_text(answer_text[:4000])
+                    else:
+                        await status_msg.edit_text("⚠️ ИИ вернул пустой ответ.")
+                else:
+                    err_text = await resp.text()
+                    await status_msg.edit_text(f"⚠️ Ошибка API ({resp.status}): {err_text[:200]}")
 
     except Exception as e:
-        await status_msg.edit_text(f"⚠️ Ошибка при обращении к ИИ: {e}")
+        await status_msg.edit_text(f"⚠️ Ошибка соединения: {e}")
 
 
 @dp.callback_query(F.data.startswith("download_"))
@@ -592,7 +607,7 @@ async def main():
     server_process.start()
 
     await set_bot_commands(bot)
-    print("Бот успешно запущен для группы ОМ117-А с актуальными кабинетами!")
+    print("Бот успешно запущен для группы ОМ117-А с прямым HTTP-запросом!")
     await dp.start_polling(bot)
 
 
