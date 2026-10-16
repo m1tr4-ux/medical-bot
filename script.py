@@ -23,8 +23,8 @@ TOKEN = "8508064690:AAGcT0-LdWR1nuqC27dU9gJoyFl_MJJrVfE"
 # Нативный ключ из Google AI Studio
 GEMINI_API_KEY = "AQ.Ab8RN6IFhs-3sIe6t-7Fy2znJqRAss4GBRcca8f4D4BjHputvA"
 
-# Чистая инициализация клиента (без Vertex AI, без ADC и без Google Cloud)
-client = genai.Client(api_key=GEMINI_API_KEY)
+os.environ["GEMINI_API_KEY"] = GEMINI_API_KEY
+client = genai.Client()
 
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=TOKEN)
