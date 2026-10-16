@@ -21,7 +21,7 @@ import multiprocessing
 TOKEN = "8508064690:AAGcT0-LdWR1nuqC27dU9gJoyFl_MJJrVfE"
 
 # Твой токен AQ... и настройки проекта для Vertex AI
-GEMINI_API_KEY = "AQ.Ab8RN6JD9ny0xT-cRrCJSrrdBkliKbXDtrFjgJi8-D4EZKIYNA"
+GEMINI_API_KEY = "AQ.Ab8RN6IFhs-3sIe6t-7Fy2znJqRAss4GBRcca8f4D4BjHputvA"
 
 os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "true"
 os.environ["GOOGLE_CLOUD_PROJECT"] = "847061344628"
