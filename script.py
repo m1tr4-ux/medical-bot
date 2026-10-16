@@ -20,16 +20,12 @@ import multiprocessing
 
 TOKEN = "8508064690:AAGcT0-LdWR1nuqC27dU9gJoyFl_MJJrVfE"
 
-# Твой новый ключ и номер проекта со скриншота
-GEMINI_API_KEY = "AQ.Ab8RN6JD9ny0xT-cRrCJSrrdBkliKbXDtrFjgJi8-D4EZKIYNA"
+# Твой новый ключ AQ... (нативный ключ Google AI Studio)
+GEMINI_API_KEY = "AQ.Ab8RN6IFhs-3sIe6t-7Fy2znJqRAss4GBRcca8f4D4BjHputvA"
 
-# Включаем работу через Vertex AI и передаем данные проекта
-os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "true"
-os.environ["GOOGLE_CLOUD_PROJECT"] = "847061344628"
-os.environ["GOOGLE_OAUTH_ACCESS_TOKEN"] = GEMINI_API_KEY
+# Чистая инициализация клиента нового поколения (без Vertex AI и ADC-ошибок!)
+client = genai.Client(api_key=GEMINI_API_KEY)
 
-# Инициализация клиента (он сам подхватит переменные выше)
-client = genai.Client()
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
@@ -525,9 +521,9 @@ async def handle_user_query_to_file(message: types.Message, state: FSMContext):
 Запрос студента:
 {user_prompt}"""
 
-      # Вызов модели через стандартный клиент Vertex AI
+        # Нативный вызов модели через актуальный SDK google-genai
         response = client.models.generate_content(
-            model='gemini-3.8-flash',
+            model='gemini-2.5-flash',
             contents=prompt_text,
         )
         
